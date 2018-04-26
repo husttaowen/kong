@@ -22,6 +22,7 @@ local function delete_cascade(self, table_name, fk)
   end
 end
 
+
 function _Consumers:delete(primary_key)
   local fk = { consumer_id = primary_key.id }
   delete_cascade(self, "plugins", fk)
