@@ -1,6 +1,9 @@
 local helpers = require "spec.helpers"
 local cjson = require "cjson"
 local escape = require("socket.url").escape
+local Errors  = require "kong.db.errors"
+local utils   = require "kong.tools.utils"
+
 
 local function it_content_types(title, fn)
   local test_form_encoded = fn("application/x-www-form-urlencoded")
@@ -8,6 +11,7 @@ local function it_content_types(title, fn)
   it(title .. " with application/www-form-urlencoded", test_form_encoded)
   it(title .. " with application/json", test_json)
 end
+
 
 for _, strategy in helpers.each_strategy() do
 
@@ -366,6 +370,70 @@ describe("Admin API (" .. strategy .. "): ", function()
             local body = assert.res_status(400, res)
             local json = cjson.decode(body)
             assert.same({ message = "Cannot parse JSON body" }, json)
+          end)
+        end)
+      end)
+
+      describe("PUT", function()
+        it_content_types("creates if not exists", function(content_type)
+          return function()
+            local id = utils.uuid()
+            local res = client:put("/consumers/" .. id, {
+              body    = { custom_id = "bob" },
+              headers = { ["Content-Type"] = content_type }
+            })
+            local body = assert.res_status(200, res)
+            local json = cjson.decode(body)
+            assert.same("bob", json.custom_id)
+            assert.same(id, json.id)
+          end
+        end)
+
+        it_content_types("replaces if found", function(content_type)
+          return function()
+            local res = client:put("/consumers/" .. consumer.id, {
+              body    = { username = "peter" },
+              headers = { ["Content-Type"] = content_type }
+            })
+
+            local body = assert.res_status(200, res)
+            local json = cjson.decode(body)
+            assert.equal("peter", json.username)
+
+            local in_db = assert(db.consumers:select({ id = consumer.id }))
+            assert.same(json, in_db)
+          end
+        end)
+
+        describe("errors", function()
+          it("handles malformed JSON body", function()
+            local res = client:put("/consumers/" .. consumer.id, {
+              body    = '{"hello": "world"',
+              headers = { ["Content-Type"] = "application/json" }
+            })
+            local body = assert.res_status(400, res)
+            assert.equal('{"message":"Cannot parse JSON body"}', body)
+          end)
+
+          it_content_types("handles invalid input", function(content_type)
+            return function()
+              -- Missing params
+              local res = client:put("/consumers/" .. utils.uuid(), {
+                body = {},
+                headers = { ["Content-Type"] = content_type }
+              })
+              local body = assert.res_status(400, res)
+              assert.same({
+                code    = Errors.codes.SCHEMA_VIOLATION,
+                name    = "schema violation",
+                fields  = {
+                  ["@entity"] = {
+                    "at least one of these fields must be non-empty: 'custom_id', 'username'"
+                  }
+                },
+                message = "schema violation (at least one of these fields must be non-empty: 'custom_id', 'username')"
+              }, cjson.decode(body))
+            end
           end)
         end)
       end)
