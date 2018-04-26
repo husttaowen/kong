@@ -340,19 +340,6 @@ describe("Admin API (" .. strategy .. "): ", function()
               assert.res_status(404, res)
             end
           end)
-          it_content_types("handles invalid input", function(content_type)
-            return function()
-              local res = assert(client:send {
-                method = "PATCH",
-                path = "/consumers/" .. consumer.id,
-                body = {},
-                headers = {["Content-Type"] = content_type}
-              })
-              local body = assert.res_status(400, res)
-              local json = cjson.decode(body)
-              assert.same({ message = "empty body" }, json)
-            end
-          end)
           it("returns 415 on invalid content-type", function()
             local res = assert(client:request {
               method = "PATCH",
@@ -379,35 +366,6 @@ describe("Admin API (" .. strategy .. "): ", function()
             local body = assert.res_status(400, res)
             local json = cjson.decode(body)
             assert.same({ message = "Cannot parse JSON body" }, json)
-          end)
-          it("returns 400 on missing body with multipart/form-data", function()
-            local res = assert(client:request {
-              method = "PATCH",
-              path = "/consumers/" .. consumer.id,
-              headers = {["Content-Type"] = "multipart/form-data"}
-            })
-            local body = assert.res_status(400, res)
-            local json = cjson.decode(body)
-            assert.same({ message = "empty body" }, json)
-          end)
-          it("returns 400 on missing body with multipart/x-www-form-urlencoded", function()
-            local res = assert(client:request {
-              method = "PATCH",
-              path = "/consumers/" .. consumer.id,
-              headers = {["Content-Type"] = "application/x-www-form-urlencoded"}
-            })
-            local body = assert.res_status(400, res)
-            local json = cjson.decode(body)
-            assert.same({ message = "empty body" }, json)
-          end)
-          it("returns 400 on missing body with no content-type header", function()
-            local res = assert(client:request {
-              method = "PATCH",
-              path = "/consumers/" .. consumer.id,
-            })
-            local body = assert.res_status(400, res)
-            local json = cjson.decode(body)
-            assert.same({ message = "empty body" }, json)
           end)
         end)
       end)

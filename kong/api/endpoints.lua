@@ -40,9 +40,6 @@ local function query_entity(context, self, db, schema)
   local args
   if context == "update" or context == "upsert" then
     args = self.args.post
-    if not next(args) then
-      return responses.send(400, "empty body")
-    end
   end
 
   local id = unescape_uri(self.params[schema.name])
