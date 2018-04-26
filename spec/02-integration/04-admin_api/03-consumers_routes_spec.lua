@@ -28,7 +28,7 @@ describe("Admin API (" .. strategy .. "): ", function()
     helpers.stop_kong()
   end)
 
-  local consumer, consumer2, consumer3
+  local consumer, consumer2
   before_each(function()
     assert(db:truncate())
     dao:truncate_tables()
@@ -39,10 +39,6 @@ describe("Admin API (" .. strategy .. "): ", function()
     consumer2 = assert(bp.consumers:insert {
       username = "bob pop",  -- containing space for urlencoded test
       custom_id = "abcd"
-    })
-    consumer3 = assert(bp.consumers:insert {
-      username = "83825bb5-38c7-4160-8c23-54dd2b007f31",  -- uuid format
-      custom_id = "1a2b"
     })
     client = helpers.admin_client()
   end)
@@ -273,15 +269,6 @@ describe("Admin API (" .. strategy .. "): ", function()
           local json = cjson.decode(body)
           assert.same(consumer, json)
         end)
-        it("retrieves by username in uuid format", function()
-          local res = assert(client:send {
-            method = "GET",
-            path = "/consumers/" .. consumer3.username
-          })
-          local body = assert.res_status(200, res)
-          local json = cjson.decode(body)
-          assert.same(consumer3, json)
-        end)
         it("retrieves by urlencoded username", function()
           local res = assert(client:send {
             method = "GET",
@@ -473,23 +460,6 @@ describe("Admin API (" .. strategy .. "): ", function()
           local res = assert(client:send {
             method = "POST",
             path = "/consumers/" .. consumer2.username .. "/plugins",
-            body = {
-              name = "rewriter",
-              ["config.value"] = "potato",
-            },
-            headers = {["Content-Type"] = content_type}
-          })
-          local body = assert.res_status(201, res)
-          local json = cjson.decode(body)
-          assert.equal("rewriter", json.name)
-          assert.same("potato", json.config.value)
-        end
-      end)
-      it_content_types("creates a plugin config using a consumer username in uuid format", function(content_type)
-        return function()
-          local res = assert(client:send {
-            method = "POST",
-            path = "/consumers/" .. consumer3.username .. "/plugins",
             body = {
               name = "rewriter",
               ["config.value"] = "potato",
