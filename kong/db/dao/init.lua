@@ -177,12 +177,21 @@ local function generate_foreign_key_methods(self)
         validate_unique_value(unique_value)
 
         local entity, err, err_t = self["select_by_" .. name](self, unique_value)
-        if err or not entity then
+        if err then
           return nil, err, err_t
         end
+        if not entity then
+          return true
+        end
 
-        -- FIXME assumes primary key is id
-        return self:delete({ id = entity.id })
+        local _, err_t = self.strategy:delete_by_field(name, unique_value)
+        if err_t then
+          return nil, tostring(err_t), err_t
+        end
+
+        self:post_crud_event("delete", entity)
+
+        return true
       end
     end
   end
@@ -434,8 +443,11 @@ function DAO:delete(primary_key)
   end
 
   local entity, err, err_t = self:select(primary_key)
-  if err or not entity then
+  if err then
     return nil, err, err_t
+  end
+  if not entity then
+    return true
   end
 
   local _, err_t = self.strategy:delete(primary_key)

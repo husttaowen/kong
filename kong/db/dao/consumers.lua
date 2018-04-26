@@ -23,18 +23,34 @@ local function delete_cascade(self, table_name, fk)
 end
 
 
-function _Consumers:delete(primary_key)
-  local fk = { consumer_id = primary_key.id }
+local function delete_cascade_all(self, consumer_id)
+  local fk = { consumer_id = consumer_id }
   delete_cascade(self, "plugins", fk)
-
   delete_cascade(self, "jwt_secrets", fk)
   delete_cascade(self, "basicauth_credentials", fk)
   delete_cascade(self, "oauth2_credentials", fk)
   delete_cascade(self, "hmacauth_credentials", fk)
   delete_cascade(self, "acls", fk)
   delete_cascade(self, "keyauth_credentials", fk)
+end
 
+
+function _Consumers:delete(primary_key)
+  delete_cascade_all(self, primary_key.id)
   return self.super.delete(self, primary_key)
+end
+
+
+function _Consumers:delete_by_username(username)
+  local entity, err, err_t = self:select_by_username(username)
+  if err then
+    return nil, err, err_t
+  end
+  if not entity then
+    return true
+  end
+  delete_cascade_all(self, entity.id)
+  return self.super.delete_by_username(self, username)
 end
 
 
