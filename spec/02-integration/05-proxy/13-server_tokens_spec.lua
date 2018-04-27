@@ -46,6 +46,13 @@ describe("headers [#" .. strategy .. "]", function()
 
       teardown(helpers.stop_kong)
 
+      it("intermediate kong conf in prefix should contain 'headers=server_tokens,latency_tokens'", function()
+        local conf = helpers.get_running_conf()
+        assert.equal("server_tokens", conf.headers[1])
+        assert.equal("latency_tokens", conf.headers[2])
+        assert.equal(2, #conf.headers)
+      end)
+
       it("should return Kong 'Via' header but not change the 'Server' header when request was proxied", function()
         local res = assert(proxy_client:send {
           method  = "GET",
@@ -122,6 +129,12 @@ describe("headers [#" .. strategy .. "]", function()
 
       teardown(helpers.stop_kong)
 
+      it("intermediate kong conf in prefix should contain 'headers=Server'", function()
+        local conf = helpers.get_running_conf()
+        assert.equal("Server", conf.headers[1])
+        assert.equal(1, #conf.headers)
+      end)
+
       it("should not return Kong 'Via' header but not change the 'Server' header when request was proxied", function()
         local res = assert(proxy_client:send {
           method  = "GET",
@@ -159,6 +172,12 @@ describe("headers [#" .. strategy .. "]", function()
       })
 
       teardown(helpers.stop_kong)
+
+      it("intermediate kong conf in prefix should contain 'headers=server_tokens'", function()
+        local conf = helpers.get_running_conf()
+        assert.equal("server_tokens", conf.headers[1])
+        assert.equal(1, #conf.headers)
+      end)
 
       it("should return Kong 'Via' header but not change the 'Server' header when request was proxied", function()
         local res = assert(proxy_client:send {

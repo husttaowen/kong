@@ -1159,6 +1159,7 @@ return {
   clean_prefix = clean_prefix,
   wait_for_invalidation = wait_for_invalidation,
   each_strategy = each_strategy,
+  get_running_conf = get_running_conf,
 
   -- miscellaneous
   intercept = intercept,
